@@ -270,7 +270,6 @@ class AddressView(LoginRequiredMixin, View):
         addr = request.POST.get('addr')
         zip_code = request.POST.get('zip_code')
         phone = request.POST.get('phone')
-
         # 校验数据
         if not all([receiver, addr, phone]):
             return render(request, 'user_center_site.html', {'errmsg': '数据不完整'})

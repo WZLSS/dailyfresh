@@ -160,3 +160,12 @@ SESSION_CACHE_ALIAS = "default"
 LOGIN_URL = '/user/login'  # /accounts/login
 
 AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.AllowAllUsersModelBackend']
+
+# 设置django文件存储类
+DEFAULT_FILE_STORAGE='utils.fdfs.storage.FDFSStorage'
+
+# 设置client.conf文件目录
+FDFS_CLIENT_CONF = './utils/fdfs/client.conf'
+
+# 设置nginx的访问ip和端口号
+FDFS_NGINX_IP = "http://192.168.139.132:8888/"

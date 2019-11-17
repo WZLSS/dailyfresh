@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-
+from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.contrib.auth import authenticate, login, logout
 from django.urls import reverse
@@ -7,7 +7,7 @@ from django.views.generic import View
 from django.http import HttpResponse
 from django.conf import settings
 from django_redis import get_redis_connection
-
+from apps.order.models import OrderGoods, OrderInfo
 from apps.user.models import User, Address
 from apps.goods.models import GoodsSKU
 from celery_tasks.tasks import send_register_active_email
@@ -236,11 +236,46 @@ class UserInfoView(LoginRequiredMixin, View):
 class UserOrderView(LoginRequiredMixin, View):
     '''用户中心-订单页'''
 
-    def get(self, request):
+    def get(self, request, page):
         '''显示'''
         # 获取用户的订单信息
-
-        return render(request, 'user_center_order.html', {'page': 'order'})
+        user = request.user
+        orders = OrderInfo.objects.filter(user=user).order_by('-create_time')
+        # 遍历获取订单商品信息
+        for order in orders:
+            order_skus = OrderGoods.objects.filter(order_id=order.order_id)
+            # 遍历计算小计
+            for order_sku in order_skus:
+                amount = order_sku.count * order_sku.price
+                # 动态增加属性
+                order_sku.amount = amount
+            order.status_name = OrderInfo.ORDER_STATUS[order.order_status]
+            order.order_skus = order_skus
+        # 分页
+        paginator = Paginator(orders, 3)
+        # 获取指定页的内容
+        try:
+            page = int(page)
+        except Exception as result:
+            page = 1
+        # 获取page页内容的Page对象
+        order_page = paginator.page(page)
+        # 进行页码的控制，使其只显示5个页码
+        num_pages = paginator.num_pages
+        # 总页数小于5，显示所有
+        if num_pages < 5:
+            pages = range(1, num_pages + 1)
+        # 当前页小于3，显示前五页
+        elif page <= 3:
+            pages = range(1, 6)
+        # 当前页大于3，显示后5页
+        elif num_pages - page <= 2:
+            pages = range(num_pages - 4, num_pages + 1)
+        # 显示前两页，当前页，后两页
+        else:
+            pages = range(page - 2, page + 3)
+        context = {'order_page': order_page, 'pages': pages, 'page': 'order'}
+        return render(request, 'user_center_order.html', context)
 
 
 # /user/address

@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'bga5t#n-a9=mx^glxprkc#16c#z*n_t%o8jiwh(y*i+h7c!xo$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -38,23 +38,13 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'haystack',  # 全文搜索框架
     'tinymce',  # 富文本编辑器
     'apps.user',  # 用户模块
     'apps.goods',  # 商品模块
     'apps.cart',  # 购物车模块
     'apps.order',  # 订单模块
 )
-
-# MIDDLEWARE_CLASSES = (
-#     'django.contrib.sessions.middleware.SessionMiddleware',
-#     'django.middleware.common.CommonMiddleware',
-#     'django.middleware.csrf.CsrfViewMiddleware',
-#     'django.contrib.auth.middleware.AuthenticationMiddleware',
-#     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-#     'django.contrib.messages.middleware.MessageMiddleware',
-#     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-#     'django.middleware.security.SecurityMiddleware',
-# )
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -121,10 +111,13 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+# 配置收集静态文件路径
+STATIC_ROOT = '/var/webhome/dailyfresh/static'
+
 
 # 富文本编辑器配置
 TINYMCE_DEFAULT_CONFIG = {
-    'theme': 'advance',
+    'theme': 'advanced',
     'width': 600,
     'height': 400,
 }
@@ -162,10 +155,24 @@ LOGIN_URL = '/user/login'  # /accounts/login
 AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.AllowAllUsersModelBackend']
 
 # 设置django文件存储类
-DEFAULT_FILE_STORAGE='utils.fdfs.storage.FDFSStorage'
+DEFAULT_FILE_STORAGE = 'utils.fdfs.storage.FDFSStorage'
 
 # 设置client.conf文件目录
-FDFS_CLIENT_CONF = './utils/fdfs/client.conf'
+FDFS_CLIENT_CONF = BASE_DIR + '/utils/fdfs/client.conf'
 
 # 设置nginx的访问ip和端口号
 FDFS_NGINX_IP = "http://192.168.139.132:8888/"
+
+# 全文搜索引擎的配置
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        #  使用whoosh搜索引擎
+        'ENGINE': 'haystack.backends.whoosh_cn_backend.WhooshEngine',
+        # 'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
+        #  索引文件路径
+        'PATH': os.path.join(BASE_DIR, 'whoosh_index'),
+    }
+}
+
+# 当添加、修改、删除数据时，自动生成索引
+HAYTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'

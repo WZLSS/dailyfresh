@@ -1,0 +1,172 @@
+{% extends 'base_detail_list.html' %}
+{% load staticfiles %}
+	{% block title %}天天生鲜-商品详情{% endblock title %}
+
+	{% block main_content %}
+        <div class="breadcrumb">
+		<a href="#">全部分类</a>
+		<span>></span>
+		<a href="#">{{ sku.type.name }}</a>
+		<span>></span>
+		<a href="#">商品详情</a>
+	</div>
+        <div class="goods_detail_con clearfix">
+            <div class="goods_detail_pic fl"><img src="{{ sku.image.url }}"></div>
+
+            <div class="goods_detail_list fr">
+                <h3>{{ sku.name }}</h3>
+                <p>{{ sku.desc }}</p>
+                <div class="prize_bar">
+                    <span class="show_pirze">¥<em>{{ sku.price }}</em></span>
+                    <span class="show_unit">单  位：{{ sku.unite }}</span>
+                </div>
+                <div class="goods_num clearfix">
+                    <div class="num_name fl">数 量：</div>
+                    <div class="num_add fl">
+                        <input type="text" class="num_show fl" value="1">
+                        <a href="javascript:;" class="add fr">+</a>
+                        <a href="javascript:;" class="minus fr">-</a>
+                    </div>
+                </div>
+                <div class="total">总价：<em></em></div>
+                <div>
+                    <p>同类其他规格商品</p>
+                    <ul>
+                        {% for same_spu_sku in same_spu_skus %}
+                            <li><a href="{% url 'goods:detail' same_spu_sku.id %}">{{ same_spu_sku.name }}</a></li>
+                            {% empty %}
+                            暂无商品
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="operate_btn">
+                    <a href="javascript:;" class="buy_btn">立即购买</a>
+                    {% csrf_token %}
+                    <a href="javascript:;" class="add_cart" sku_id={{ sku.id }} id="add_cart">加入购物车</a>
+                </div>
+            </div>
+        </div>
+        <div class="main_wrap clearfix">
+            <div class="l_wrap fl clearfix">
+                <div class="new_goods">
+                    <h3>新品推荐</h3>
+                    <ul>
+                        {% for new_sku in new_skus %}
+                        <li>
+                            <a href="{% url 'goods:detail' new_sku.id %}"><img src="{{ new_sku.image.url }}"></a>
+                            <h4><a href="{% url 'goods:detail' new_sku.id %}">{{ new_sku.name }}</a></h4>
+                            <div class="prize">￥{{ new_sku.price }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="r_wrap fr clearfix">
+                <ul class="detail_tab clearfix">
+                    <li id="tag_detail" class="active">商品介绍</li>
+                    <li id="tag_comment">评论</li>
+                </ul>
+
+                <div class="tab_content" id="tab_detail">
+                    <dl>
+                        <dt>商品详情：</dt>
+                        <dd>{{ sku.goods.detail|safe }}</dd>
+                    </dl>
+                </div>
+                <div class="tab_content" id="tab_comment" style="display: none">
+                    {% for sku_order in sku_orders %}
+                    <dl>
+                        <dt>用户名：{{ sku_order.order.user.username }}&nbsp;评论时间：{{ sku_order.update_time }}</dt>
+                        <dd>{{ sku_order.comment }}</dd>
+                    </dl>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+	{% endblock main_content %}
+    {% block bottom %}
+        <div class="add_jump"></div>
+    {% endblock bottom %}
+	{% block bottomfiles %}
+	<script type="text/javascript" src="{% static 'js/jquery-1.12.4.min.js' %}"></script>
+	<script type="text/javascript">
+        {#  页面加载调用  #}
+        update_goods_amount();
+        {#  计算商品价格  #}
+        function update_goods_amount() {
+        {#  获取商品单价  #}
+            var price = $(".show_pirze").children('em').text();
+            var count = $('.num_show').val();
+            var price_int = parseFloat(price);
+            var count_int = parseInt(count);
+            var amount = price_int * count_int;
+            $(".total").children('em').text(amount.toFixed(2)+'元'); {# 转换位字符串并保留两位小数 #}
+        }
+        $(".add").click(function () {
+            var count = $(".num_show").val();
+            var count_int = parseInt(count)+1;
+            $(".num_show").val(count_int);
+            update_goods_amount();
+        })
+        $(".minus").click(function () {
+            var count = $(".num_show").val();
+            var count_int = parseInt(count)-1;
+            if(count_int <= 1){
+                $(".num_show").val(1);
+            }else {
+                $(".num_show").val(count_int);
+            }
+            update_goods_amount();
+        })
+        $(".num_show").blur(function () {
+            var count = $(this).val();
+            if(isNaN(count) || count.trim().length==0 || parseInt(count)<1){
+                count = 1;
+            }
+            $(".num_show").val(parseInt(count));
+            update_goods_amount();
+        })
+
+		var $add_x = $('#add_cart').offset().top;
+		var $add_y = $('#add_cart').offset().left;
+
+		var $to_x = $('#show_count').offset().top;
+		var $to_y = $('#show_count').offset().left;
+
+		$('#add_cart').click(function(){
+		    var sku_id = $(this).attr('sku_id')
+            var count = $('.num_show').val()
+            var csrfmiddlewaretoken = $('input[name=csrfmiddlewaretoken]').val()
+            params = {'sku_id': sku_id, 'count': count, 'csrfmiddlewaretoken': csrfmiddlewaretoken}
+            $.post('/cart/add', params, function (data) {
+                if(data.res == 5){
+                    $(".add_jump").css({'left':$add_y+80,'top':$add_x+10,'display':'block'})
+                    $(".add_jump").stop().animate({
+                    'left': $to_y+7,
+                    'top': $to_x+7},
+                    "fast", function() {
+					$(".add_jump").fadeOut('fast',function(){
+						$('#show_count').html(data.total_count);
+					});
+			});
+                }else {
+                    alert(data.errorMsg)
+                }
+            })
+		})
+
+        $("#tag_detail").click(function () {
+            $('#tag_comment').removeClass('active')
+            $(this).addClass('active')
+            $('#tab_comment').hide()
+            $('#tab_detail').show()
+        })
+        $("#tag_comment").click(function () {
+            $('#tag_detail').removeClass('active')
+            $(this).addClass('active')
+            $('#tab_detail').hide()
+            $('#tab_comment').show()
+        })
+	</script>
+    {% endblock bottomfiles %}
